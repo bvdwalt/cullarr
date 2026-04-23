@@ -24,10 +24,10 @@ type JellyfinConfig struct {
 }
 
 type ArrConfig struct {
-	URL    string
+	URL string
 	// APIKey is found at Settings → General in Sonarr/Radarr.
-	APIKey    string
-	Enabled   bool
+	APIKey  string
+	Enabled bool
 	// Unmonitor prevents Sonarr/Radarr from re-downloading after deletion.
 	Unmonitor bool
 }

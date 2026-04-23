@@ -1,14 +1,14 @@
 version: 2
 
-project_name: APP_NAME
+project_name: cullarr
 
 before:
   hooks:
     - go mod download
 
 builds:
-  - main: ./cmd/APP_NAME
-    binary: APP_NAME
+  - main: ./cmd/cullarr
+    binary: cullarr
     env:
       - CGO_ENABLED=0
     goos:
@@ -28,22 +28,13 @@ archives:
     files:
       - LICENSE
 
-homebrew_casks:
-  - repository:
-      owner: GITHUB_OWNER
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    homepage: "https://github.com/GITHUB_OWNER/APP_NAME"
-    description: "APP_DESCRIPTION"
-    license: "MIT"
-
 checksum:
   name_template: checksums.txt
 
 release:
   github:
-    owner: GITHUB_OWNER
-    name: APP_NAME
+    owner: bvdwalt
+    name: cullarr
 
 changelog:
   sort: asc

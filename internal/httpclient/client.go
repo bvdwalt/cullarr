@@ -43,7 +43,7 @@ func (c *Client) Get(path string, params url.Values, out any) error {
 	if err != nil {
 		return fmt.Errorf("GET %s: %w", u, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
@@ -63,7 +63,7 @@ func (c *Client) Delete(path string) error {
 	if err != nil {
 		return fmt.Errorf("DELETE %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
@@ -84,7 +84,7 @@ func (c *Client) Put(path string, body []byte) error {
 	if err != nil {
 		return fmt.Errorf("PUT %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
 		b, _ := io.ReadAll(resp.Body)

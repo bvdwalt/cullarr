@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bvdwalt/cullarr/cmd"
 	"github.com/bvdwalt/cullarr/internal/config"
+	"github.com/bvdwalt/cullarr/internal/runner"
 )
 
 const usage = `cullarr — delete watched media files from Sonarr/Radarr based on Jellyfin watch status
@@ -51,7 +51,7 @@ func main() {
 		cfg.DryRun = true
 	}
 
-	if err := cmd.Run(cfg); err != nil {
+	if err := runner.Run(cfg); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}

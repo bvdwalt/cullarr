@@ -1,4 +1,4 @@
-BINARY_NAME := "APP_NAME"
+BINARY_NAME := "cullarr"
 BINARY_PATH := "./" + BINARY_NAME
 CMD_PATH := "./cmd/" + BINARY_NAME
 VERSION := `git describe --tags --always --dirty 2>/dev/null || echo "dev"`
