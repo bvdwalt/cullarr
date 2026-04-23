@@ -2,6 +2,7 @@ package runner
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/bvdwalt/cullarr/internal/config"
 	"github.com/bvdwalt/cullarr/internal/jellyfin"
@@ -85,6 +86,20 @@ func Run(cfg *config.Config) error {
 			eligibleMovies = append(eligibleMovies, eligibleItem{item: movieItems[id], watchedBy: watchers})
 		}
 	}
+
+	sort.Slice(eligibleEpisodes, func(i, j int) bool {
+		a, b := eligibleEpisodes[i].item, eligibleEpisodes[j].item
+		if a.SeriesName != b.SeriesName {
+			return a.SeriesName < b.SeriesName
+		}
+		if a.ParentIndexNumber != b.ParentIndexNumber {
+			return a.ParentIndexNumber < b.ParentIndexNumber
+		}
+		return a.IndexNumber < b.IndexNumber
+	})
+	sort.Slice(eligibleMovies, func(i, j int) bool {
+		return eligibleMovies[i].item.Name < eligibleMovies[j].item.Name
+	})
 
 	log.Info("Eligible episodes (watched by >=%d users): %d", minWatchers, len(eligibleEpisodes))
 	log.Info("Eligible movies   (watched by >=%d users): %d", minWatchers, len(eligibleMovies))

@@ -1,6 +1,7 @@
 package matcher
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/bvdwalt/cullarr/internal/jellyfin"
@@ -169,5 +170,70 @@ func TestFindRadarrMovie_TitleFallback(t *testing.T) {
 	res := idx.FindRadarrMovie(item)
 	if !res.Found || res.MatchMethod != "title" || !res.FuzzyMatch {
 		t.Errorf("expected fuzzy title match, got found=%v method=%q fuzzy=%v", res.Found, res.MatchMethod, res.FuzzyMatch)
+	}
+}
+
+func TestFindRadarrMovie_NoMatch(t *testing.T) {
+	movies := []radarr.Movie{{ID: 1, Title: "Inception", TmdbID: 27205, ImdbID: "tt1375666"}}
+	idx := BuildRadarrIndex(movies)
+
+	item := jellyfin.Item{Name: "Unknown Movie", ProviderIds: map[string]string{"Tmdb": "99999"}}
+	res := idx.FindRadarrMovie(item)
+	if res.Found {
+		t.Error("expected no match, got one")
+	}
+}
+
+func TestBuildSonarrIndex_GetEpisodesError(t *testing.T) {
+	series := []sonarr.Series{{ID: 1, Title: "Breaking Bad", TvdbID: 81189}}
+	_, err := BuildSonarrIndex(series, func(id int) ([]sonarr.Episode, error) {
+		return nil, fmt.Errorf("sonarr unavailable")
+	})
+	if err == nil {
+		t.Fatal("expected error from getEpisodes, got nil")
+	}
+}
+
+func TestFindSonarrEpisode_TvdbEpisodeIDMiss_FallsToSeriesKey(t *testing.T) {
+	// Jellyfin has a TVDB episode ID, but it doesn't exist in Sonarr's index.
+	// Should fall through to tvdb_series_se.
+	series := []sonarr.Series{{ID: 1, Title: "Breaking Bad", TvdbID: 81189}}
+	episodes := map[int][]sonarr.Episode{
+		1: {{ID: 100, TvdbID: 9999, SeasonNumber: 1, EpisodeNumber: 1, HasFile: true}},
+	}
+	idx, err := makeSonarrIndex(series, episodes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	item := jellyfin.Item{
+		SeriesName:        "Breaking Bad",
+		ParentIndexNumber: 1,
+		IndexNumber:       1,
+		ProviderIds:       map[string]string{"Tvdb": "0000"}, // wrong episode TVDB ID
+	}
+	res := idx.FindSonarrEpisode(item)
+	if !res.Found {
+		t.Fatal("expected match via tvdb_series_se, got none")
+	}
+	if res.MatchMethod != "tvdb_series_se" {
+		t.Errorf("expected tvdb_series_se, got %q", res.MatchMethod)
+	}
+}
+
+func TestFormatSE(t *testing.T) {
+	cases := []struct {
+		season, episode int
+		want            string
+	}{
+		{1, 1, "S01E01"},
+		{3, 12, "S03E12"},
+		{10, 5, "S10E05"},
+	}
+	for _, c := range cases {
+		got := FormatSE(c.season, c.episode)
+		if got != c.want {
+			t.Errorf("FormatSE(%d, %d) = %q, want %q", c.season, c.episode, got, c.want)
+		}
 	}
 }
