@@ -1,0 +1,22 @@
+services:
+  cullarr:
+    image: cullarr:latest
+    build: .
+    restart: "no"
+    environment:
+      CULLARR_JELLYFIN_URL: "http://jellyfin:8096"
+      CULLARR_JELLYFIN_APIKEY: "your-jellyfin-api-key"
+      # CULLARR_JELLYFIN_USERS: "alice,bob"  # omit to use all users
+
+      CULLARR_SONARR_URL: "http://sonarr:8989"
+      CULLARR_SONARR_APIKEY: "your-sonarr-api-key"
+      CULLARR_SONARR_ENABLED: "true"
+      CULLARR_SONARR_UNMONITOR: "true"
+
+      CULLARR_RADARR_URL: "http://radarr:7878"
+      CULLARR_RADARR_APIKEY: "your-radarr-api-key"
+      CULLARR_RADARR_ENABLED: "true"
+      CULLARR_RADARR_UNMONITOR: "true"
+
+      CULLARR_MIN_WATCHERS: "0"
+      CULLARR_DRY_RUN: "true"

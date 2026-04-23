@@ -1,89 +1,95 @@
-# go-template
+# Cullarr
 
-A GitHub template repository for Go projects, pre-configured with:
+Deletes watched media files from Sonarr/Radarr based on Jellyfin watch history. Optionally requires multiple users to have watched an item before it is eligible for deletion.
 
-- **GoReleaser** — cross-platform builds (macOS, Linux, Windows) and GitHub releases
-- **Homebrew tap** — automatic formula updates on release
-- **Auto-tagging** — conventional commits drive version bumps via `svu`
-- **justfile** — common development commands
+## How it works
 
-## Using this template
+1. Fetches watched episodes and movies for each configured Jellyfin user
+2. Filters to items watched by at least `CULLARR_MIN_WATCHERS` users
+3. Matches each item against Sonarr/Radarr using a three-tier strategy:
+   - **Episodes**: TVDB episode ID → (TVDB series ID + S/E numbers) → normalised title
+   - **Movies**: TMDB ID → IMDB ID → normalised title
+4. Deletes the file and optionally unmonitors the item to prevent re-downloading
 
-1. Click **"Use this template"** on GitHub to create a new repo
-2. Clone your new repo locally
-3. Run the init script to replace placeholders:
-   ```bash
-   chmod +x init.sh
-   ./init.sh <app-name> <github-owner> <module-path> "<description>"
-   ```
-   Example:
-   ```bash
-   ./init.sh mytool bvdwalt github.com/bvdwalt/mytool "A tool that does things"
-   ```
-4. Add the required secrets — see [Secrets setup](#secrets-setup) below
-5. Start coding in `cmd/<app-name>/main.go`
+Title-based matches (tier 3) are flagged for manual review rather than deleted automatically.
 
-## Secrets setup
+## Quick start
 
-Two PATs are required. Create them at **GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens**.
+```sh
+export CULLARR_JELLYFIN_URL=http://localhost:8096
+export CULLARR_JELLYFIN_APIKEY=your-key
+export CULLARR_SONARR_URL=http://localhost:8989
+export CULLARR_SONARR_APIKEY=your-key
+export CULLARR_SONARR_ENABLED=true
+export CULLARR_SONARR_UNMONITOR=true
+export CULLARR_RADARR_URL=http://localhost:7878
+export CULLARR_RADARR_APIKEY=your-key
+export CULLARR_RADARR_ENABLED=true
+export CULLARR_RADARR_UNMONITOR=true
+export CULLARR_DRY_RUN=true
 
-### `GH_PAT`
+# Preview what would be deleted
+cullarr -dry-run
 
-This allows the auto-tag workflow to push tags in a way that triggers the release workflow. GitHub's default `GITHUB_TOKEN` intentionally cannot trigger other workflows, so a real PAT is needed.
-
-- **Resource owner:** your GitHub account
-- **Repository access:** only the new repo (e.g. `mynewapp`)
-- **Permissions:** Contents → Read and write
-
-Add it to the repo at **Settings → Secrets and variables → Actions → New repository secret**, named `GH_PAT`.
-
-> This secret must be added per repo each time you use this template.
-
-### `HOMEBREW_TAP_GITHUB_TOKEN`
-
-This allows GoReleaser to push the updated Homebrew cask to your tap repo after a release.
-
-- **Resource owner:** your GitHub account
-- **Repository access:** only `homebrew-tap`
-- **Permissions:** Contents → Read and write
-
-Add it to the repo at **Settings → Secrets and variables → Actions → New repository secret**, named `HOMEBREW_TAP_GITHUB_TOKEN`.
-
-> If you already have this secret from another project, you still need to add it here — secrets are per repo.
-
-### Prerequisites before first release
-
-- Your `<github-owner>/homebrew-tap` repo must exist (can be empty). GoReleaser will fail if it doesn't.
-- The `LICENSE` file is included in release archives — update the copyright year/name if needed.
-
-## Versioning
-
-Commits to `main` are automatically tagged using [svu](https://github.com/caarlos0/svu) based on [conventional commits](https://www.conventionalcommits.org/):
-
-| Prefix | Bump |
-|--------|------|
-| `fix:` | patch (0.0.x) |
-| `feat:` | minor (0.x.0) |
-| `feat!:` / `BREAKING CHANGE:` | major (x.0.0) |
-| `chore:`, `docs:`, etc. | no bump |
-
-## Local commands
-
-```bash
-just build          # Build the binary
-just run            # Build and run
-just test           # Run tests
-just test-coverage  # Run tests with coverage report
-just fmt            # Format code
-just lint           # Run golangci-lint
-just clean          # Remove build artifacts
-just version        # Show current and next version
-just tag            # Create version tag locally
-just release        # Tag and push to trigger a release
+# Delete for real
+cullarr
 ```
 
-## Prerequisites
+## Configuration
 
-- [just](https://github.com/casey/just) — `brew install just`
-- [svu](https://github.com/caarlos0/svu) — `go install github.com/caarlos0/svu/v3@latest` (for `just version/tag/release`)
-- [golangci-lint](https://golangci-lint.run/) — `brew install golangci-lint` (optional, for `just lint`)
+All configuration is via environment variables.
+
+| Variable | Required | Description |
+|---|---|---|
+| `CULLARR_JELLYFIN_URL` | Yes | Jellyfin server URL |
+| `CULLARR_JELLYFIN_APIKEY` | Yes | Jellyfin API key (admin key required) |
+| `CULLARR_JELLYFIN_USERS` | No | Comma-separated usernames to consider. Omit to use all users. |
+| `CULLARR_SONARR_URL` | If Sonarr enabled | Sonarr server URL |
+| `CULLARR_SONARR_APIKEY` | If Sonarr enabled | Sonarr API key (Settings → General) |
+| `CULLARR_SONARR_ENABLED` | No | Enable Sonarr integration (`true`/`false`, default `false`) |
+| `CULLARR_SONARR_UNMONITOR` | No | Unmonitor episodes after deletion (`true`/`false`, default `false`) |
+| `CULLARR_RADARR_URL` | If Radarr enabled | Radarr server URL |
+| `CULLARR_RADARR_APIKEY` | If Radarr enabled | Radarr API key (Settings → General) |
+| `CULLARR_RADARR_ENABLED` | No | Enable Radarr integration (`true`/`false`, default `false`) |
+| `CULLARR_RADARR_UNMONITOR` | No | Unmonitor movies after deletion (`true`/`false`, default `false`) |
+| `CULLARR_MIN_WATCHERS` | No | Number of users that must have watched before deletion. `0` means all configured users (default `0`) |
+| `CULLARR_DRY_RUN` | No | Log what would be deleted without making any changes (`true`/`false`, default `false`) |
+
+Use the internal service URLs for Jellyfin/Sonarr/Radarr (not the public-facing reverse proxy URL), so requests hit the APIs directly without going through SSO.
+
+## Docker
+
+```sh
+docker build -t cullarr .
+
+docker run --rm \
+  -e CULLARR_JELLYFIN_URL=http://jellyfin:8096 \
+  -e CULLARR_JELLYFIN_APIKEY=your-key \
+  -e CULLARR_SONARR_URL=http://sonarr:8989 \
+  -e CULLARR_SONARR_APIKEY=your-key \
+  -e CULLARR_SONARR_ENABLED=true \
+  -e CULLARR_SONARR_UNMONITOR=true \
+  -e CULLARR_RADARR_URL=http://radarr:7878 \
+  -e CULLARR_RADARR_APIKEY=your-key \
+  -e CULLARR_RADARR_ENABLED=true \
+  -e CULLARR_RADARR_UNMONITOR=true \
+  -e CULLARR_DRY_RUN=true \
+  cullarr
+```
+
+## Docker Compose
+
+Copy `docker-compose.yml`, fill in your values, then run on demand:
+
+```sh
+docker compose run --rm cullarr
+```
+
+To run on a schedule, invoke this command from a cron job or your server's task scheduler (e.g. Unraid User Scripts, Synology Task Scheduler):
+
+```sh
+# Run every night at 3am
+0 3 * * * docker compose -f /path/to/docker-compose.yml run --rm cullarr
+```
+
+Set `CULLARR_DRY_RUN=true` until you're confident the matches look correct, then switch to `false`.

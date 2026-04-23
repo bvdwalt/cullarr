@@ -1,5 +1,6 @@
-/APP_NAME
-/.idea/
-/dist/
-/coverage.out
-/coverage.html
+cullarr
+cullarr.json
+.idea/
+dist/
+coverage.out
+coverage.html
