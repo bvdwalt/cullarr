@@ -232,11 +232,11 @@ func processRadarr(cfg *config.Config, log *logger.Logger, eligible []eligibleIt
 			}
 		}
 
-		if cfg.Radarr.Unmonitor {
-			log.Unmonitored("movie", ei.item.Name, "")
+		if cfg.Radarr.Remove {
+			log.Removed("movie", ei.item.Name, "")
 			if !cfg.DryRun {
-				if err := rc.UnmonitorMovie(m); err != nil {
-					return fmt.Errorf("unmonitoring movie: %w", err)
+				if err := rc.DeleteMovie(m.ID); err != nil {
+					return fmt.Errorf("removing movie from Radarr: %w", err)
 				}
 			}
 		}

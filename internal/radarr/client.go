@@ -1,7 +1,6 @@
 package radarr
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/bvdwalt/cullarr/internal/httpclient"
@@ -18,14 +17,15 @@ func NewClient(baseURL, apiKey string) *Client {
 }
 
 type Movie struct {
-	ID          int    `json:"id"`
-	Title       string `json:"title"`
-	ImdbID      string `json:"imdbId"`
-	TmdbID      int    `json:"tmdbId"`
-	HasFile     bool   `json:"hasFile"`
-	MovieFileID int    `json:"movieFileId"`
-	Monitored   bool   `json:"monitored"`
-	Path        string `json:"path"`
+	ID               int    `json:"id"`
+	Title            string `json:"title"`
+	ImdbID           string `json:"imdbId"`
+	TmdbID           int    `json:"tmdbId"`
+	HasFile          bool   `json:"hasFile"`
+	MovieFileID      int    `json:"movieFileId"`
+	Monitored        bool   `json:"monitored"`
+	Path             string `json:"path"`
+	QualityProfileID int    `json:"qualityProfileId"`
 }
 
 func (c *Client) GetAllMovies() ([]Movie, error) {
@@ -44,14 +44,9 @@ func (c *Client) DeleteMovieFile(movieFileID int) error {
 	return nil
 }
 
-func (c *Client) UnmonitorMovie(movie Movie) error {
-	movie.Monitored = false
-	body, err := json.Marshal(movie)
-	if err != nil {
-		return err
-	}
-	if err := c.http.Put(fmt.Sprintf("/api/v3/movie/%d", movie.ID), body); err != nil {
-		return fmt.Errorf("radarr UnmonitorMovie (id=%d): %w", movie.ID, err)
+func (c *Client) DeleteMovie(id int) error {
+	if err := c.http.Delete(fmt.Sprintf("/api/v3/movie/%d", id)); err != nil {
+		return fmt.Errorf("radarr DeleteMovie (id=%d): %w", id, err)
 	}
 	return nil
 }

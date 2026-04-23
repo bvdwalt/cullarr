@@ -25,6 +25,7 @@ const (
 	ActionSkipped     ActionKind = "SKIPPED"   // watched but no file on disk
 	ActionUnmatched   ActionKind = "UNMATCHED" // could not correlate Jellyfin→Arr
 	ActionUnmonitored ActionKind = "UNMONITORED"
+	ActionRemoved     ActionKind = "REMOVED"
 )
 
 type Entry struct {
@@ -98,6 +99,18 @@ func (l *Logger) Unmonitored(mediaType, title, detail string) {
 	l.entries = append(l.entries, e)
 }
 
+func (l *Logger) Removed(mediaType, title, detail string) {
+	e := Entry{Kind: ActionRemoved, MediaType: mediaType, Title: title, Detail: detail}
+	prefix := "[REMOVED]"
+	if l.dryRun {
+		prefix = "[DRY-RUN:REMOVE]"
+	}
+	fmt.Printf("  %s%s%s%s %s %s%s%s\n",
+		bold, cyan, prefix, reset,
+		mediaType, bold, label(title, detail), reset)
+	l.entries = append(l.entries, e)
+}
+
 func (l *Logger) Skipped(mediaType, title, detail, reason string) {
 	e := Entry{Kind: ActionSkipped, MediaType: mediaType, Title: title, Detail: detail}
 	fmt.Printf("  %s[SKIPPED]%s %s %s%s%s — %s\n",
@@ -135,6 +148,7 @@ func (l *Logger) Summary() {
 		fmt.Printf("  Deleted:      %s%s%d%s\n", bold, green, counts[ActionDeleted], reset)
 	}
 	fmt.Printf("  Unmonitored:  %d\n", counts[ActionUnmonitored])
+	fmt.Printf("  Removed:      %d\n", counts[ActionRemoved])
 	fmt.Printf("  Skipped:      %d\n", counts[ActionSkipped])
 
 	if n := counts[ActionUnmatched]; n > 0 {

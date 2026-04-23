@@ -10,7 +10,7 @@ import (
 type Config struct {
 	Jellyfin    JellyfinConfig
 	Sonarr      ArrConfig
-	Radarr      ArrConfig
+	Radarr      RadarrConfig
 	MinWatchers int
 	DryRun      bool
 }
@@ -28,8 +28,16 @@ type ArrConfig struct {
 	// APIKey is found at Settings → General in Sonarr/Radarr.
 	APIKey  string
 	Enabled bool
-	// Unmonitor prevents Sonarr/Radarr from re-downloading after deletion.
+	// Unmonitor prevents Sonarr from re-downloading after deletion.
 	Unmonitor bool
+}
+
+type RadarrConfig struct {
+	URL    string
+	APIKey string
+	Enabled bool
+	// Remove deletes the movie from Radarr entirely after the file is deleted.
+	Remove bool
 }
 
 func FromEnv() (*Config, error) {
@@ -47,7 +55,7 @@ func FromEnv() (*Config, error) {
 	if err != nil {
 		errs = append(errs, err.Error())
 	}
-	radarrUnmonitor, err := envBool("CULLARR_RADARR_UNMONITOR")
+	radarrRemove, err := envBool("CULLARR_RADARR_REMOVE")
 	if err != nil {
 		errs = append(errs, err.Error())
 	}
@@ -76,11 +84,11 @@ func FromEnv() (*Config, error) {
 			Enabled:   sonarrEnabled,
 			Unmonitor: sonarrUnmonitor,
 		},
-		Radarr: ArrConfig{
-			URL:       os.Getenv("CULLARR_RADARR_URL"),
-			APIKey:    os.Getenv("CULLARR_RADARR_APIKEY"),
-			Enabled:   radarrEnabled,
-			Unmonitor: radarrUnmonitor,
+		Radarr: RadarrConfig{
+			URL:     os.Getenv("CULLARR_RADARR_URL"),
+			APIKey:  os.Getenv("CULLARR_RADARR_APIKEY"),
+			Enabled: radarrEnabled,
+			Remove:  radarrRemove,
 		},
 		MinWatchers: minWatchers,
 		DryRun:      dryRun,

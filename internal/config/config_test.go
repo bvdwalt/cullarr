@@ -52,7 +52,7 @@ func TestFromEnv_AllFields(t *testing.T) {
 		"CULLARR_RADARR_URL":        "http://radarr:7878",
 		"CULLARR_RADARR_APIKEY":     "radarr-key",
 		"CULLARR_RADARR_ENABLED":    "true",
-		"CULLARR_RADARR_UNMONITOR":  "true",
+		"CULLARR_RADARR_REMOVE":     "true",
 		"CULLARR_MIN_WATCHERS":      "2",
 		"CULLARR_DRY_RUN":           "true",
 	})
@@ -67,8 +67,8 @@ func TestFromEnv_AllFields(t *testing.T) {
 	if !cfg.Sonarr.Enabled || !cfg.Sonarr.Unmonitor {
 		t.Error("expected Sonarr enabled and unmonitor=true")
 	}
-	if !cfg.Radarr.Enabled || !cfg.Radarr.Unmonitor {
-		t.Error("expected Radarr enabled and unmonitor=true")
+	if !cfg.Radarr.Enabled || !cfg.Radarr.Remove {
+		t.Error("expected Radarr enabled and remove=true")
 	}
 	if cfg.MinWatchers != 2 {
 		t.Errorf("expected MinWatchers=2, got %d", cfg.MinWatchers)
