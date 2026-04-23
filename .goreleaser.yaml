@@ -36,6 +36,17 @@ release:
     owner: bvdwalt
     name: cullarr
 
+dockers_v2:
+  - images:
+      - "robotwizard/cullarr"
+    tags:
+      - "{{ .Version }}"
+      - latest
+    dockerfile: Dockerfile.goreleaser
+    platforms:
+      - linux/amd64
+      - linux/arm64
+
 changelog:
   sort: asc
   filters:

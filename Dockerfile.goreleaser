@@ -1,0 +1,6 @@
+FROM alpine:latest
+ARG TARGETOS
+ARG TARGETARCH
+RUN apk --no-cache add ca-certificates
+COPY ${TARGETOS}/${TARGETARCH}/cullarr /usr/local/bin/cullarr
+ENTRYPOINT ["/usr/local/bin/cullarr"]
