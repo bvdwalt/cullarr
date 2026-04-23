@@ -16,7 +16,7 @@ services:
       CULLARR_RADARR_URL: "http://radarr:7878"
       CULLARR_RADARR_APIKEY: "your-radarr-api-key"
       CULLARR_RADARR_ENABLED: "true"
-      CULLARR_RADARR_UNMONITOR: "true"
+      CULLARR_RADARR_REMOVE: "true"
 
       CULLARR_MIN_WATCHERS: "0"
       CULLARR_DRY_RUN: "true"

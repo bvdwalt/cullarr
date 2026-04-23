@@ -9,7 +9,7 @@ Deletes watched media files from Sonarr/Radarr based on Jellyfin watch history. 
 3. Matches each item against Sonarr/Radarr using a three-tier strategy:
    - **Episodes**: TVDB episode ID → (TVDB series ID + S/E numbers) → normalised title
    - **Movies**: TMDB ID → IMDB ID → normalised title
-4. Deletes the file and optionally unmonitors the item to prevent re-downloading
+4. Deletes the file; optionally unmonitors episodes (Sonarr) or removes the movie from Radarr entirely to prevent re-downloading
 
 Title-based matches (tier 3) are flagged for manual review rather than deleted automatically.
 
@@ -25,7 +25,7 @@ export CULLARR_SONARR_UNMONITOR=true
 export CULLARR_RADARR_URL=http://localhost:7878
 export CULLARR_RADARR_APIKEY=your-key
 export CULLARR_RADARR_ENABLED=true
-export CULLARR_RADARR_UNMONITOR=true
+export CULLARR_RADARR_REMOVE=true
 export CULLARR_DRY_RUN=true
 
 # Preview what would be deleted
@@ -51,7 +51,7 @@ All configuration is via environment variables.
 | `CULLARR_RADARR_URL` | If Radarr enabled | Radarr server URL |
 | `CULLARR_RADARR_APIKEY` | If Radarr enabled | Radarr API key (Settings → General) |
 | `CULLARR_RADARR_ENABLED` | No | Enable Radarr integration (`true`/`false`, default `false`) |
-| `CULLARR_RADARR_UNMONITOR` | No | Unmonitor movies after deletion (`true`/`false`, default `false`) |
+| `CULLARR_RADARR_REMOVE` | No | Remove movie from Radarr after file deletion (`true`/`false`, default `false`) |
 | `CULLARR_MIN_WATCHERS` | No | Number of users that must have watched before deletion. `0` means all configured users (default `0`) |
 | `CULLARR_DRY_RUN` | No | Log what would be deleted without making any changes (`true`/`false`, default `false`) |
 
@@ -72,7 +72,7 @@ docker run --rm \
   -e CULLARR_RADARR_URL=http://radarr:7878 \
   -e CULLARR_RADARR_APIKEY=your-key \
   -e CULLARR_RADARR_ENABLED=true \
-  -e CULLARR_RADARR_UNMONITOR=true \
+  -e CULLARR_RADARR_REMOVE=true \
   -e CULLARR_DRY_RUN=true \
   cullarr
 ```
