@@ -169,7 +169,8 @@ func processSonarr(cfg *config.Config, log *logger.Logger, eligible []eligibleIt
 		log.Deleted("episode", title, detail, ei.watchedBy, result.MatchMethod)
 		if !cfg.DryRun {
 			if err := sc.DeleteEpisodeFile(ep.EpisodeFileID); err != nil {
-				return fmt.Errorf("deleting episode file: %w", err)
+				log.Error("deleting episode file for %s %s: %v", title, detail, err)
+				return err
 			}
 		}
 
@@ -177,7 +178,8 @@ func processSonarr(cfg *config.Config, log *logger.Logger, eligible []eligibleIt
 			log.Unmonitored("episode", title, detail)
 			if !cfg.DryRun {
 				if err := sc.UnmonitorEpisode(ep); err != nil {
-					return fmt.Errorf("unmonitoring episode: %w", err)
+					log.Error("unmonitoring episode: %v", err)
+					return err
 				}
 			}
 		}
@@ -228,7 +230,8 @@ func processRadarr(cfg *config.Config, log *logger.Logger, eligible []eligibleIt
 		log.Deleted("movie", ei.item.Name, "", ei.watchedBy, result.MatchMethod)
 		if !cfg.DryRun {
 			if err := rc.DeleteMovieFile(m.MovieFileID); err != nil {
-				return fmt.Errorf("deleting movie file: %w", err)
+				log.Error("deleting movie file for %s: %v", ei.item.Name, err)
+				return err
 			}
 		}
 
@@ -236,7 +239,8 @@ func processRadarr(cfg *config.Config, log *logger.Logger, eligible []eligibleIt
 			log.Removed("movie", ei.item.Name, "")
 			if !cfg.DryRun {
 				if err := rc.DeleteMovie(m.ID); err != nil {
-					return fmt.Errorf("removing movie from Radarr: %w", err)
+					log.Error("removing movie from Radarr: %v", err)
+					return err
 				}
 			}
 		}
