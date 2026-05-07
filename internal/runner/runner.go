@@ -169,7 +169,7 @@ func processSonarr(cfg *config.Config, log *logger.Logger, eligible []eligibleIt
 		log.Deleted("episode", title, detail, ei.watchedBy, result.MatchMethod)
 		if !cfg.DryRun {
 			if err := sc.DeleteEpisodeFile(ep.EpisodeFileID); err != nil {
-				log.Error("deleting episode file: %v", err)
+				log.Error("deleting episode file for %s %s: %v", title, detail, err)
 				return err
 			}
 		}
@@ -230,7 +230,7 @@ func processRadarr(cfg *config.Config, log *logger.Logger, eligible []eligibleIt
 		log.Deleted("movie", ei.item.Name, "", ei.watchedBy, result.MatchMethod)
 		if !cfg.DryRun {
 			if err := rc.DeleteMovieFile(m.MovieFileID); err != nil {
-				log.Error("deleting movie file: %v", err)
+				log.Error("deleting movie file for %s: %v", ei.item.Name, err)
 				return err
 			}
 		}
