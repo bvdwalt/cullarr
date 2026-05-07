@@ -63,6 +63,10 @@ func (l *Logger) Warn(format string, args ...any) {
 	fmt.Printf("  %s%s[WARN]%s %s\n", bold, yellow, reset, fmt.Sprintf(format, args...))
 }
 
+func (l *Logger) Error(format string, args ...any) {
+	fmt.Printf("  %s%s[ERROR]%s %s\n", bold, red, reset, fmt.Sprintf(format, args...))
+}
+
 func (l *Logger) Deleted(mediaType, title, detail string, watchedBy []string, matchMethod string) {
 	e := Entry{
 		Kind:        ActionDeleted,
