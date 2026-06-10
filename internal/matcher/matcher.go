@@ -56,6 +56,13 @@ func BuildSonarrIndex(allSeries []sonarr.Series, getEpisodes func(int) ([]sonarr
 
 	for _, s := range allSeries {
 		idx.seriesByTitle[normalise(s.Title)] = s
+		for _, alt := range s.AlternateTitles {
+			if k := normalise(alt.Title); k != "" {
+				if _, exists := idx.seriesByTitle[k]; !exists {
+					idx.seriesByTitle[k] = s
+				}
+			}
+		}
 
 		episodes, err := getEpisodes(s.ID)
 		if err != nil {

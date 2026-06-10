@@ -117,6 +117,40 @@ func TestFindSonarrEpisode_TitleFallback(t *testing.T) {
 	}
 }
 
+func TestFindSonarrEpisode_AlternateTitle(t *testing.T) {
+	// Sonarr title is "Archer (2009)" but Jellyfin reports "Archer" — the
+	// alternate title should bridge the gap so Tier 2 (tvdb_series_se) matches.
+	series := []sonarr.Series{{
+		ID:     1,
+		Title:  "Archer (2009)",
+		TvdbID: 110381,
+		AlternateTitles: []sonarr.AlternateTitle{
+			{Title: "Archer"},
+		},
+	}}
+	episodes := map[int][]sonarr.Episode{
+		1: {{ID: 100, TvdbID: 5581189, SeasonNumber: 7, EpisodeNumber: 4, HasFile: true}},
+	}
+	idx, err := makeSonarrIndex(series, episodes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	item := jellyfin.Item{
+		SeriesName:        "Archer",
+		ParentIndexNumber: 7,
+		IndexNumber:       4,
+		ProviderIds:       map[string]string{}, // no episode-level TVDB ID
+	}
+	res := idx.FindSonarrEpisode(item)
+	if !res.Found {
+		t.Fatal("expected match via alternate title, got none")
+	}
+	if res.MatchMethod != "tvdb_series_se" {
+		t.Errorf("expected tvdb_series_se, got %q", res.MatchMethod)
+	}
+}
+
 func TestFindSonarrEpisode_NoMatch(t *testing.T) {
 	series := []sonarr.Series{{ID: 1, Title: "Breaking Bad", TvdbID: 81189}}
 	episodes := map[int][]sonarr.Episode{
