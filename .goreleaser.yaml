@@ -47,6 +47,16 @@ dockers_v2:
       - linux/amd64
       - linux/arm64
 
+  - images:
+      - "ghcr.io/bvdwalt/cullarr"
+    tags:
+      - "{{ .Version }}"
+      - latest
+    dockerfile: Dockerfile.goreleaser
+    platforms:
+      - linux/amd64
+      - linux/arm64
+
 changelog:
   sort: asc
   filters:
