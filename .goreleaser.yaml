@@ -37,7 +37,8 @@ release:
     name: cullarr
 
 dockers_v2:
-  - images:
+  - id: dockerhub
+    images:
       - "robotwizard/cullarr"
     tags:
       - "{{ .Version }}"
@@ -47,7 +48,8 @@ dockers_v2:
       - linux/amd64
       - linux/arm64
 
-  - images:
+  - id: ghcr
+    images:
       - "ghcr.io/bvdwalt/cullarr"
     tags:
       - "{{ .Version }}"
