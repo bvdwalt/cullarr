@@ -18,12 +18,17 @@ func NewClient(baseURL, apiKey string) *Client {
 	}
 }
 
+type AlternateTitle struct {
+	Title string `json:"title"`
+}
+
 type Series struct {
-	ID     int    `json:"id"`
-	Title  string `json:"title"`
-	TvdbID int    `json:"tvdbId"`
-	ImdbID string `json:"imdbId"`
-	Path   string `json:"path"`
+	ID              int              `json:"id"`
+	Title           string           `json:"title"`
+	AlternateTitles []AlternateTitle `json:"alternateTitles"`
+	TvdbID          int              `json:"tvdbId"`
+	ImdbID          string           `json:"imdbId"`
+	Path            string           `json:"path"`
 }
 
 type Episode struct {
