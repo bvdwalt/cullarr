@@ -37,17 +37,6 @@ release:
     name: cullarr
 
 dockers_v2:
-  - id: dockerhub
-    images:
-      - "robotwizard/cullarr"
-    tags:
-      - "{{ .Version }}"
-      - latest
-    dockerfile: Dockerfile.goreleaser
-    platforms:
-      - linux/amd64
-      - linux/arm64
-
   - id: ghcr
     images:
       - "ghcr.io/bvdwalt/cullarr"
