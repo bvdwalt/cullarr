@@ -69,13 +69,19 @@ func (c *Client) DeleteEpisodeFile(episodeFileID int) error {
 	return nil
 }
 
+// Uses the bulk monitor endpoint to avoid PUTing back a partial Episode.
 func (c *Client) UnmonitorEpisode(episode Episode) error {
-	episode.Monitored = false
-	body, err := json.Marshal(episode)
+	body, err := json.Marshal(struct {
+		EpisodeIDs []int `json:"episodeIds"`
+		Monitored  bool  `json:"monitored"`
+	}{
+		EpisodeIDs: []int{episode.ID},
+		Monitored:  false,
+	})
 	if err != nil {
 		return err
 	}
-	if err := c.http.Put(fmt.Sprintf("/api/v3/episode/%d", episode.ID), body); err != nil {
+	if err := c.http.Put("/api/v3/episode/monitor", body); err != nil {
 		return fmt.Errorf("sonarr UnmonitorEpisode (id=%d): %w", episode.ID, err)
 	}
 	return nil

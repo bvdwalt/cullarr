@@ -55,12 +55,15 @@ func BuildSonarrIndex(allSeries []sonarr.Series, getEpisodes func(int) ([]sonarr
 	}
 
 	for _, s := range allSeries {
-		idx.seriesByTitle[normalise(s.Title)] = s
+		titles := []string{normalise(s.Title)}
 		for _, alt := range s.AlternateTitles {
 			if k := normalise(alt.Title); k != "" {
-				if _, exists := idx.seriesByTitle[k]; !exists {
-					idx.seriesByTitle[k] = s
-				}
+				titles = append(titles, k)
+			}
+		}
+		for _, k := range titles {
+			if _, exists := idx.seriesByTitle[k]; !exists {
+				idx.seriesByTitle[k] = s
 			}
 		}
 
@@ -76,7 +79,9 @@ func BuildSonarrIndex(allSeries []sonarr.Series, getEpisodes func(int) ([]sonarr
 			if s.TvdbID != 0 {
 				idx.bySeriesKey[EpisodeKey{TvdbSeriesID: s.TvdbID, Season: ep.SeasonNumber, Episode: ep.EpisodeNumber}] = ep
 			}
-			idx.byTitleKey[titleEpisodeKey{Title: normalise(s.Title), Season: ep.SeasonNumber, Episode: ep.EpisodeNumber}] = ep
+			for _, k := range titles {
+				idx.byTitleKey[titleEpisodeKey{Title: k, Season: ep.SeasonNumber, Episode: ep.EpisodeNumber}] = ep
+			}
 		}
 	}
 

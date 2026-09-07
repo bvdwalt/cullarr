@@ -30,7 +30,7 @@ Environment variables:
   CULLARR_RADARR_URL          Radarr server URL
   CULLARR_RADARR_APIKEY       Radarr API key
   CULLARR_RADARR_ENABLED      Enable Radarr integration (true/false)
-  CULLARR_RADARR_UNMONITOR    Unmonitor movies after deletion (true/false)
+  CULLARR_RADARR_REMOVE       Remove movie from Radarr after deletion (true/false)
 
   CULLARR_MIN_WATCHERS        Users that must have watched before deletion (0 = all)
   CULLARR_DRY_RUN             Dry-run mode — log what would be deleted (true/false)

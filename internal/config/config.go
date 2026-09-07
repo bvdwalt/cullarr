@@ -113,6 +113,9 @@ func (c *Config) validate() error {
 	if c.Radarr.Enabled && c.Radarr.URL == "" {
 		return fmt.Errorf("CULLARR_RADARR_URL is required when CULLARR_RADARR_ENABLED=true")
 	}
+	if c.MinWatchers < 0 {
+		return fmt.Errorf("CULLARR_MIN_WATCHERS must not be negative")
+	}
 	return nil
 }
 

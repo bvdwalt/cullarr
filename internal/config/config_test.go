@@ -133,6 +133,17 @@ func TestFromEnv_InvalidBool(t *testing.T) {
 	}
 }
 
+func TestFromEnv_NegativeMinWatchers(t *testing.T) {
+	env := baseEnv()
+	env["CULLARR_MIN_WATCHERS"] = "-1"
+	setEnv(t, env)
+
+	_, err := FromEnv()
+	if err == nil || !strings.Contains(err.Error(), "CULLARR_MIN_WATCHERS") {
+		t.Errorf("expected error about CULLARR_MIN_WATCHERS, got %v", err)
+	}
+}
+
 func TestFromEnv_InvalidInt(t *testing.T) {
 	env := baseEnv()
 	env["CULLARR_MIN_WATCHERS"] = "two"
