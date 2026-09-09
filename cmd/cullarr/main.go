@@ -52,6 +52,7 @@ func main() {
 	}
 
 	if err := runner.Run(cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 }
