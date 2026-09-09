@@ -13,7 +13,7 @@ type Client struct {
 
 func NewClient(baseURL, apiKey string) *Client {
 	return &Client{
-		http: httpclient.New(baseURL, "X-Emby-Token", apiKey),
+		http: httpclient.New(baseURL, "Authorization", fmt.Sprintf(`MediaBrowser Token="%s"`, apiKey)),
 	}
 }
 
