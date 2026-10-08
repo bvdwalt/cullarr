@@ -29,6 +29,7 @@ type Series struct {
 	TvdbID          int              `json:"tvdbId"`
 	ImdbID          string           `json:"imdbId"`
 	Path            string           `json:"path"`
+	Tags            []int            `json:"tags"`
 }
 
 type Episode struct {
@@ -85,4 +86,22 @@ func (c *Client) UnmonitorEpisode(episode Episode) error {
 		return fmt.Errorf("sonarr UnmonitorEpisode (id=%d): %w", episode.ID, err)
 	}
 	return nil
+}
+
+type tag struct {
+	ID    int    `json:"id"`
+	Label string `json:"label"`
+}
+
+// GetTagLabels returns tag ID to label.
+func (c *Client) GetTagLabels() (map[int]string, error) {
+	var tags []tag
+	if err := c.http.Get("/api/v3/tag", nil, &tags); err != nil {
+		return nil, fmt.Errorf("sonarr GetTagLabels: %w", err)
+	}
+	labels := make(map[int]string, len(tags))
+	for _, t := range tags {
+		labels[t.ID] = t.Label
+	}
+	return labels, nil
 }

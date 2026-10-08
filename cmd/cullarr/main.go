@@ -32,7 +32,8 @@ Environment variables:
   CULLARR_RADARR_ENABLED      Enable Radarr integration (true/false)
   CULLARR_RADARR_REMOVE       Remove movie from Radarr after deletion (true/false)
 
-  CULLARR_MIN_WATCHERS        Users that must have watched before deletion (0 = all)
+  CULLARR_MIN_WATCHERS        Untagged items: watchers required before deletion (0 = all users)
+  CULLARR_TAG_PREFIX          Tag prefix limiting an item to specific users (default cullarr-)
   CULLARR_DRY_RUN             Dry-run mode — log what would be deleted (true/false)
 `
 

@@ -12,6 +12,9 @@ type Config struct {
 	Sonarr      ArrConfig
 	Radarr      RadarrConfig
 	MinWatchers int
+	// TagPrefix marks Sonarr/Radarr tags that limit an item to specific users,
+	// e.g. "cullarr-bj".
+	TagPrefix string
 	DryRun      bool
 }
 
@@ -63,6 +66,10 @@ func FromEnv() (*Config, error) {
 	if err != nil {
 		errs = append(errs, err.Error())
 	}
+	tagPrefix := strings.ToLower(os.Getenv("CULLARR_TAG_PREFIX"))
+	if tagPrefix == "" {
+		tagPrefix = "cullarr-"
+	}
 	dryRun, err := envBool("CULLARR_DRY_RUN")
 	if err != nil {
 		errs = append(errs, err.Error())
@@ -91,6 +98,7 @@ func FromEnv() (*Config, error) {
 			Remove:  radarrRemove,
 		},
 		MinWatchers: minWatchers,
+		TagPrefix:   tagPrefix,
 		DryRun:      dryRun,
 	}
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/bvdwalt/cullarr/internal/audience"
 	"github.com/bvdwalt/cullarr/internal/config"
 	"github.com/bvdwalt/cullarr/internal/jellyfin"
 	"github.com/bvdwalt/cullarr/internal/logger"
@@ -36,11 +37,10 @@ func Run(cfg *config.Config) error {
 		}
 	}
 
-	minWatchers := cfg.MinWatchers
-	if minWatchers == 0 {
-		minWatchers = len(users)
+	log.Info("Untagged items require all %d user(s) to have watched; tag with %s<username> to limit to specific users", len(users), cfg.TagPrefix)
+	if cfg.MinWatchers > 0 {
+		log.Info("Untagged items: min watchers override = %d", cfg.MinWatchers)
 	}
-	log.Info("Min watchers required for deletion: %d", minWatchers)
 
 	log.Section("Jellyfin: collecting watch data")
 
@@ -75,16 +75,12 @@ func Run(cfg *config.Config) error {
 
 	var eligibleEpisodes []eligibleItem
 	for id, watchers := range episodeWatchers {
-		if len(watchers) >= minWatchers {
-			eligibleEpisodes = append(eligibleEpisodes, eligibleItem{item: episodeItems[id], watchedBy: watchers})
-		}
+		eligibleEpisodes = append(eligibleEpisodes, eligibleItem{item: episodeItems[id], watchedBy: watchers})
 	}
 
 	var eligibleMovies []eligibleItem
 	for id, watchers := range movieWatchers {
-		if len(watchers) >= minWatchers {
-			eligibleMovies = append(eligibleMovies, eligibleItem{item: movieItems[id], watchedBy: watchers})
-		}
+		eligibleMovies = append(eligibleMovies, eligibleItem{item: movieItems[id], watchedBy: watchers})
 	}
 
 	sort.Slice(eligibleEpisodes, func(i, j int) bool {
@@ -101,17 +97,17 @@ func Run(cfg *config.Config) error {
 		return eligibleMovies[i].item.Name < eligibleMovies[j].item.Name
 	})
 
-	log.Info("Eligible episodes (watched by >=%d users): %d", minWatchers, len(eligibleEpisodes))
-	log.Info("Eligible movies   (watched by >=%d users): %d", minWatchers, len(eligibleMovies))
+	log.Info("Watched episodes (audience checked against Sonarr tags): %d", len(eligibleEpisodes))
+	log.Info("Watched movies   (audience checked against Radarr tags): %d", len(eligibleMovies))
 
 	if cfg.Sonarr.Enabled && len(eligibleEpisodes) > 0 {
-		if err := processSonarr(cfg, log, eligibleEpisodes); err != nil {
+		if err := processSonarr(cfg, log, users, eligibleEpisodes); err != nil {
 			return err
 		}
 	}
 
 	if cfg.Radarr.Enabled && len(eligibleMovies) > 0 {
-		if err := processRadarr(cfg, log, eligibleMovies); err != nil {
+		if err := processRadarr(cfg, log, users, eligibleMovies); err != nil {
 			return err
 		}
 	}
@@ -120,7 +116,7 @@ func Run(cfg *config.Config) error {
 	return nil
 }
 
-func processSonarr(cfg *config.Config, log *logger.Logger, eligible []eligibleItem) error {
+func processSonarr(cfg *config.Config, log *logger.Logger, users []jellyfin.User, eligible []eligibleItem) error {
 	log.Section("Sonarr: building episode index")
 
 	sc := sonarr.NewClient(cfg.Sonarr.URL, cfg.Sonarr.APIKey)
@@ -130,6 +126,15 @@ func processSonarr(cfg *config.Config, log *logger.Logger, eligible []eligibleIt
 		return fmt.Errorf("sonarr: %w", err)
 	}
 	log.Info("Series in Sonarr: %d", len(allSeries))
+
+	tagLabels, err := sc.GetTagLabels()
+	if err != nil {
+		return err
+	}
+	seriesByID := make(map[int]sonarr.Series, len(allSeries))
+	for _, s := range allSeries {
+		seriesByID[s.ID] = s
+	}
 
 	idx, err := matcher.BuildSonarrIndex(allSeries, sc.GetEpisodes)
 	if err != nil {
@@ -166,6 +171,11 @@ func processSonarr(cfg *config.Config, log *logger.Logger, eligible []eligibleIt
 			continue
 		}
 
+		if !audienceWatched(cfg, log, userNames(users), seriesByID[ep.SeriesID].Tags, tagLabels, title, ei.watchedBy) {
+			log.Skipped("episode", title, detail, "not yet watched by all required users")
+			continue
+		}
+
 		if !cfg.DryRun {
 			if err := sc.DeleteEpisodeFile(ep.EpisodeFileID); err != nil {
 				log.Error("deleting episode file for %s %s: %v", title, detail, err)
@@ -189,7 +199,7 @@ func processSonarr(cfg *config.Config, log *logger.Logger, eligible []eligibleIt
 	return nil
 }
 
-func processRadarr(cfg *config.Config, log *logger.Logger, eligible []eligibleItem) error {
+func processRadarr(cfg *config.Config, log *logger.Logger, users []jellyfin.User, eligible []eligibleItem) error {
 	log.Section("Radarr: building movie index")
 
 	rc := radarr.NewClient(cfg.Radarr.URL, cfg.Radarr.APIKey)
@@ -199,6 +209,11 @@ func processRadarr(cfg *config.Config, log *logger.Logger, eligible []eligibleIt
 		return fmt.Errorf("radarr: %w", err)
 	}
 	log.Info("Movies in Radarr: %d", len(allMovies))
+
+	tagLabels, err := rc.GetTagLabels()
+	if err != nil {
+		return err
+	}
 
 	idx := matcher.BuildRadarrIndex(allMovies)
 
@@ -228,6 +243,11 @@ func processRadarr(cfg *config.Config, log *logger.Logger, eligible []eligibleIt
 			continue
 		}
 
+		if !audienceWatched(cfg, log, userNames(users), m.Tags, tagLabels, ei.item.Name, ei.watchedBy) {
+			log.Skipped("movie", ei.item.Name, "", "not yet watched by all required users")
+			continue
+		}
+
 		if !cfg.DryRun {
 			if err := rc.DeleteMovieFile(m.MovieFileID); err != nil {
 				log.Error("deleting movie file for %s: %v", ei.item.Name, err)
@@ -249,6 +269,22 @@ func processRadarr(cfg *config.Config, log *logger.Logger, eligible []eligibleIt
 	}
 
 	return nil
+}
+
+// audienceWatched resolves the item's audience from its tags and reports
+// whether every required user has watched it.
+func audienceWatched(cfg *config.Config, log *logger.Logger, users []string, tagIDs []int, tagLabels map[int]string, title string, watchedBy []string) bool {
+	labels := make([]string, 0, len(tagIDs))
+	for _, id := range tagIDs {
+		if l, ok := tagLabels[id]; ok {
+			labels = append(labels, l)
+		}
+	}
+	aud, tagged, unknown := audience.Resolve(labels, users, cfg.TagPrefix)
+	for _, u := range unknown {
+		log.Warn("%s: tag %q matches no configured user", title, u)
+	}
+	return audience.Eligible(aud, watchedBy, tagged, cfg.MinWatchers)
 }
 
 type eligibleItem struct {

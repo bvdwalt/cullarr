@@ -26,6 +26,7 @@ type Movie struct {
 	Monitored        bool   `json:"monitored"`
 	Path             string `json:"path"`
 	QualityProfileID int    `json:"qualityProfileId"`
+	Tags             []int  `json:"tags"`
 }
 
 func (c *Client) GetAllMovies() ([]Movie, error) {
@@ -49,4 +50,22 @@ func (c *Client) DeleteMovie(id int) error {
 		return fmt.Errorf("radarr DeleteMovie (id=%d): %w", id, err)
 	}
 	return nil
+}
+
+type tag struct {
+	ID    int    `json:"id"`
+	Label string `json:"label"`
+}
+
+// GetTagLabels returns tag ID to label.
+func (c *Client) GetTagLabels() (map[int]string, error) {
+	var tags []tag
+	if err := c.http.Get("/api/v3/tag", nil, &tags); err != nil {
+		return nil, fmt.Errorf("radarr GetTagLabels: %w", err)
+	}
+	labels := make(map[int]string, len(tags))
+	for _, t := range tags {
+		labels[t.ID] = t.Label
+	}
+	return labels, nil
 }

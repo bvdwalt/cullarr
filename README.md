@@ -1,15 +1,24 @@
 # Cullarr
 
-Deletes watched media files from Sonarr/Radarr based on Jellyfin watch history. Optionally requires multiple users to have watched an item before it is eligible for deletion.
+Deletes watched media files from Sonarr/Radarr based on Jellyfin watch history. By default every user must have watched an item before it is deleted; tag a series or movie to limit that to specific users.
 
 ## How it works
 
 1. Fetches watched episodes and movies for each configured Jellyfin user
-2. Filters to items watched by at least `CULLARR_MIN_WATCHERS` users
+2. Checks each matched item against its audience (see below): all users by default, or only the users named in its Sonarr/Radarr tags
 3. Matches each item against Sonarr/Radarr using a three-tier strategy:
    - **Episodes**: TVDB episode ID → (TVDB series ID + S/E numbers) → normalised title
    - **Movies**: TMDB ID → IMDB ID → normalised title
 4. Deletes the file; optionally unmonitors episodes (Sonarr) or removes the movie from Radarr entirely to prevent re-downloading
+
+## Per-item audience
+
+Untagged series and movies are only deleted once **all** users have watched them. To clean up an item as soon as specific users have watched it, tag it in Sonarr/Radarr with `cullarr-<username>`:
+
+- `cullarr-bj`: deletable once user `BJ` has watched it, regardless of other users
+- `cullarr-bj` and `cullarr-mom-nando`: deletable once both have watched it
+
+Tag names are lowercase; spaces, `_` and `.` in usernames become `-`. A `cullarr-` tag that matches no user is logged and ignored (the item falls back to all users).
 
 Title-based matches (tier 3) are flagged for manual review rather than deleted automatically.
 
@@ -52,7 +61,8 @@ All configuration is via environment variables.
 | `CULLARR_RADARR_APIKEY` | If Radarr enabled | Radarr API key (Settings → General) |
 | `CULLARR_RADARR_ENABLED` | No | Enable Radarr integration (`true`/`false`, default `false`) |
 | `CULLARR_RADARR_REMOVE` | No | Remove movie from Radarr after file deletion (`true`/`false`, default `false`) |
-| `CULLARR_MIN_WATCHERS` | No | Number of users that must have watched before deletion. `0` means all configured users (default `0`) |
+| `CULLARR_MIN_WATCHERS` | No | For untagged items only: number of watchers required instead of all users. `0` means all users (default `0`) |
+| `CULLARR_TAG_PREFIX` | No | Sonarr/Radarr tag prefix that limits an item to specific users (default `cullarr-`) |
 | `CULLARR_DRY_RUN` | No | Log what would be deleted without making any changes (`true`/`false`, default `false`) |
 
 Use the internal service URLs for Jellyfin/Sonarr/Radarr (not the public-facing reverse proxy URL), so requests hit the APIs directly without going through SSO.
