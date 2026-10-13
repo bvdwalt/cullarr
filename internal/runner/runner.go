@@ -143,6 +143,9 @@ func processSonarr(cfg *config.Config, log *logger.Logger, users []jellyfin.User
 
 	log.Section("Sonarr: processing watched episodes")
 
+	// Episodes whose files were deleted in this run, by series ID.
+	deletedBySeries := map[int]map[int]bool{}
+
 	for _, ei := range eligible {
 		result := idx.FindSonarrEpisode(ei.item)
 		detail := matcher.FormatSE(ei.item.ParentIndexNumber, ei.item.IndexNumber)
@@ -185,6 +188,11 @@ func processSonarr(cfg *config.Config, log *logger.Logger, users []jellyfin.User
 
 		log.Deleted("episode", title, detail, ei.watchedBy, result.MatchMethod)
 
+		if deletedBySeries[ep.SeriesID] == nil {
+			deletedBySeries[ep.SeriesID] = map[int]bool{}
+		}
+		deletedBySeries[ep.SeriesID][ep.ID] = true
+
 		if cfg.Sonarr.Unmonitor {
 			if !cfg.DryRun {
 				if err := sc.UnmonitorEpisode(ep); err != nil {
@@ -196,6 +204,59 @@ func processSonarr(cfg *config.Config, log *logger.Logger, users []jellyfin.User
 		}
 	}
 
+	if cfg.Sonarr.UnmonitorSeries || cfg.Sonarr.RemoveSeries {
+		return finishSeries(cfg, log, sc, seriesByID, deletedBySeries)
+	}
+	return nil
+}
+
+// finishSeries unmonitors or removes ended series that this run left with
+// nothing on disk, provided every episode was once downloaded.
+func finishSeries(cfg *config.Config, log *logger.Logger, sc *sonarr.Client, seriesByID map[int]sonarr.Series, deletedBySeries map[int]map[int]bool) error {
+	log.Section("Sonarr: checking for finished series")
+
+	seriesIDs := make([]int, 0, len(deletedBySeries))
+	for id := range deletedBySeries {
+		seriesIDs = append(seriesIDs, id)
+	}
+	sort.Ints(seriesIDs)
+
+	for _, id := range seriesIDs {
+		series := seriesByID[id]
+
+		episodes, err := sc.GetEpisodes(id)
+		if err != nil {
+			return err
+		}
+		imported, err := sc.GetImportedEpisodeIDs(id)
+		if err != nil {
+			return err
+		}
+
+		complete, reason := seriesComplete(series, episodes, imported, deletedBySeries[id])
+		if !complete {
+			log.Skipped("series", series.Title, "", reason)
+			continue
+		}
+
+		if cfg.Sonarr.RemoveSeries {
+			if !cfg.DryRun {
+				if err := sc.DeleteSeries(id); err != nil {
+					log.Error("removing series %s: %v", series.Title, err)
+					return err
+				}
+			}
+			log.Removed("series", series.Title, "")
+		} else {
+			if !cfg.DryRun {
+				if err := sc.UnmonitorSeries(id); err != nil {
+					log.Error("unmonitoring series %s: %v", series.Title, err)
+					return err
+				}
+			}
+			log.Unmonitored("series", series.Title, "")
+		}
+	}
 	return nil
 }
 
@@ -265,6 +326,14 @@ func processRadarr(cfg *config.Config, log *logger.Logger, users []jellyfin.User
 				}
 			}
 			log.Removed("movie", ei.item.Name, "")
+		} else if cfg.Radarr.Unmonitor {
+			if !cfg.DryRun {
+				if err := rc.UnmonitorMovie(m.ID); err != nil {
+					log.Error("unmonitoring movie %s: %v", ei.item.Name, err)
+					return err
+				}
+			}
+			log.Unmonitored("movie", ei.item.Name, "")
 		}
 	}
 

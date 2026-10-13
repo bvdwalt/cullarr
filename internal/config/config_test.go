@@ -42,19 +42,19 @@ func TestFromEnv_Minimal(t *testing.T) {
 
 func TestFromEnv_AllFields(t *testing.T) {
 	setEnv(t, map[string]string{
-		"CULLARR_JELLYFIN_URL":      "http://jf:8096",
-		"CULLARR_JELLYFIN_APIKEY":   "jf-key",
-		"CULLARR_JELLYFIN_USERS":    "alice,bob",
-		"CULLARR_SONARR_URL":        "http://sonarr:8989",
-		"CULLARR_SONARR_APIKEY":     "sonarr-key",
-		"CULLARR_SONARR_ENABLED":    "true",
-		"CULLARR_SONARR_UNMONITOR":  "true",
-		"CULLARR_RADARR_URL":        "http://radarr:7878",
-		"CULLARR_RADARR_APIKEY":     "radarr-key",
-		"CULLARR_RADARR_ENABLED":    "true",
-		"CULLARR_RADARR_REMOVE":     "true",
-		"CULLARR_MIN_WATCHERS":      "2",
-		"CULLARR_DRY_RUN":           "true",
+		"CULLARR_JELLYFIN_URL":     "http://jf:8096",
+		"CULLARR_JELLYFIN_APIKEY":  "jf-key",
+		"CULLARR_JELLYFIN_USERS":   "alice,bob",
+		"CULLARR_SONARR_URL":       "http://sonarr:8989",
+		"CULLARR_SONARR_APIKEY":    "sonarr-key",
+		"CULLARR_SONARR_ENABLED":   "true",
+		"CULLARR_SONARR_UNMONITOR": "true",
+		"CULLARR_RADARR_URL":       "http://radarr:7878",
+		"CULLARR_RADARR_APIKEY":    "radarr-key",
+		"CULLARR_RADARR_ENABLED":   "true",
+		"CULLARR_RADARR_REMOVE":    "true",
+		"CULLARR_MIN_WATCHERS":     "2",
+		"CULLARR_DRY_RUN":          "true",
 	})
 
 	cfg, err := FromEnv()
@@ -152,5 +152,33 @@ func TestFromEnv_InvalidInt(t *testing.T) {
 	_, err := FromEnv()
 	if err == nil || !strings.Contains(err.Error(), "CULLARR_MIN_WATCHERS") {
 		t.Errorf("expected error about CULLARR_MIN_WATCHERS, got %v", err)
+	}
+}
+
+func TestFromEnv_CompletionToggles(t *testing.T) {
+	env := baseEnv()
+	env["CULLARR_SONARR_UNMONITOR_SERIES"] = "true"
+	env["CULLARR_SONARR_REMOVE_SERIES"] = "true"
+	env["CULLARR_RADARR_UNMONITOR"] = "true"
+	setEnv(t, env)
+
+	cfg, err := FromEnv()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !cfg.Sonarr.UnmonitorSeries || !cfg.Sonarr.RemoveSeries || !cfg.Radarr.Unmonitor {
+		t.Errorf("toggles not parsed: %+v %+v", cfg.Sonarr, cfg.Radarr)
+	}
+}
+
+func TestFromEnv_CompletionTogglesDefaultOff(t *testing.T) {
+	setEnv(t, baseEnv())
+
+	cfg, err := FromEnv()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Sonarr.UnmonitorSeries || cfg.Sonarr.RemoveSeries || cfg.Radarr.Unmonitor {
+		t.Error("expected completion toggles off by default")
 	}
 }

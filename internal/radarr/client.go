@@ -1,6 +1,7 @@
 package radarr
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/bvdwalt/cullarr/internal/httpclient"
@@ -48,6 +49,24 @@ func (c *Client) DeleteMovieFile(movieFileID int) error {
 func (c *Client) DeleteMovie(id int) error {
 	if err := c.http.Delete(fmt.Sprintf("/api/v3/movie/%d", id)); err != nil {
 		return fmt.Errorf("radarr DeleteMovie (id=%d): %w", id, err)
+	}
+	return nil
+}
+
+// UnmonitorMovie uses the bulk editor endpoint to avoid PUTing back a partial Movie.
+func (c *Client) UnmonitorMovie(id int) error {
+	body, err := json.Marshal(struct {
+		MovieIDs  []int `json:"movieIds"`
+		Monitored bool  `json:"monitored"`
+	}{
+		MovieIDs:  []int{id},
+		Monitored: false,
+	})
+	if err != nil {
+		return err
+	}
+	if err := c.http.Put("/api/v3/movie/editor", body); err != nil {
+		return fmt.Errorf("radarr UnmonitorMovie (id=%d): %w", id, err)
 	}
 	return nil
 }

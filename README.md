@@ -57,10 +57,13 @@ All configuration is via environment variables.
 | `CULLARR_SONARR_APIKEY` | If Sonarr enabled | Sonarr API key (Settings → General) |
 | `CULLARR_SONARR_ENABLED` | No | Enable Sonarr integration (`true`/`false`, default `false`) |
 | `CULLARR_SONARR_UNMONITOR` | No | Unmonitor episodes after deletion (`true`/`false`, default `false`) |
+| `CULLARR_SONARR_UNMONITOR_SERIES` | No | Unmonitor an ended series once every episode was downloaded, watched and deleted (default `false`) |
+| `CULLARR_SONARR_REMOVE_SERIES` | No | Remove such a series from Sonarr instead; files are never deleted by this step and it wins over unmonitor (default `false`) |
 | `CULLARR_RADARR_URL` | If Radarr enabled | Radarr server URL |
 | `CULLARR_RADARR_APIKEY` | If Radarr enabled | Radarr API key (Settings → General) |
 | `CULLARR_RADARR_ENABLED` | No | Enable Radarr integration (`true`/`false`, default `false`) |
 | `CULLARR_RADARR_REMOVE` | No | Remove movie from Radarr after file deletion (`true`/`false`, default `false`) |
+| `CULLARR_RADARR_UNMONITOR` | No | Unmonitor the movie after file deletion when `CULLARR_RADARR_REMOVE` is off (default `false`) |
 | `CULLARR_MIN_WATCHERS` | No | For untagged items only: number of watchers required instead of all users. `0` means all users (default `0`) |
 | `CULLARR_TAG_PREFIX` | No | Sonarr/Radarr tag prefix that limits an item to specific users (default `cullarr-`) |
 | `CULLARR_DRY_RUN` | No | Log what would be deleted without making any changes (`true`/`false`, default `false`) |
