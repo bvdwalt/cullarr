@@ -30,6 +30,8 @@ type Series struct {
 	ImdbID          string           `json:"imdbId"`
 	Path            string           `json:"path"`
 	Tags            []int            `json:"tags"`
+	Status          string           `json:"status"` // "continuing" or "ended"
+	Monitored       bool             `json:"monitored"`
 }
 
 type Episode struct {
@@ -86,6 +88,55 @@ func (c *Client) UnmonitorEpisode(episode Episode) error {
 		return fmt.Errorf("sonarr UnmonitorEpisode (id=%d): %w", episode.ID, err)
 	}
 	return nil
+}
+
+// UnmonitorSeries uses the bulk editor endpoint to avoid PUTing back a partial Series.
+func (c *Client) UnmonitorSeries(seriesID int) error {
+	body, err := json.Marshal(struct {
+		SeriesIDs []int `json:"seriesIds"`
+		Monitored bool  `json:"monitored"`
+	}{
+		SeriesIDs: []int{seriesID},
+		Monitored: false,
+	})
+	if err != nil {
+		return err
+	}
+	if err := c.http.Put("/api/v3/series/editor", body); err != nil {
+		return fmt.Errorf("sonarr UnmonitorSeries (id=%d): %w", seriesID, err)
+	}
+	return nil
+}
+
+// DeleteSeries never deletes files on disk and never adds an import list exclusion.
+func (c *Client) DeleteSeries(seriesID int) error {
+	params := url.Values{"deleteFiles": {"false"}, "addImportListExclusion": {"false"}}
+	if err := c.http.Delete(fmt.Sprintf("/api/v3/series/%d?%s", seriesID, params.Encode())); err != nil {
+		return fmt.Errorf("sonarr DeleteSeries (id=%d): %w", seriesID, err)
+	}
+	return nil
+}
+
+type historyRecord struct {
+	EpisodeID int    `json:"episodeId"`
+	EventType string `json:"eventType"`
+}
+
+// GetImportedEpisodeIDs returns the IDs of episodes that were ever imported,
+// including ones whose file has since been deleted.
+func (c *Client) GetImportedEpisodeIDs(seriesID int) (map[int]bool, error) {
+	params := url.Values{"seriesId": {fmt.Sprint(seriesID)}}
+	var records []historyRecord
+	if err := c.http.Get("/api/v3/history/series", params, &records); err != nil {
+		return nil, fmt.Errorf("sonarr GetImportedEpisodeIDs (seriesId=%d): %w", seriesID, err)
+	}
+	imported := map[int]bool{}
+	for _, r := range records {
+		if r.EventType == "downloadFolderImported" {
+			imported[r.EpisodeID] = true
+		}
+	}
+	return imported, nil
 }
 
 type tag struct {

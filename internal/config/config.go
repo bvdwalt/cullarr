@@ -15,7 +15,7 @@ type Config struct {
 	// TagPrefix marks Sonarr/Radarr tags that limit an item to specific users,
 	// e.g. "cullarr-bj".
 	TagPrefix string
-	DryRun      bool
+	DryRun    bool
 }
 
 type JellyfinConfig struct {
@@ -33,14 +33,21 @@ type ArrConfig struct {
 	Enabled bool
 	// Unmonitor prevents Sonarr from re-downloading after deletion.
 	Unmonitor bool
+	// UnmonitorSeries unmonitors an ended series once every episode has been
+	// downloaded, watched and deleted.
+	UnmonitorSeries bool
+	// RemoveSeries removes such a series from Sonarr instead. Takes precedence.
+	RemoveSeries bool
 }
 
 type RadarrConfig struct {
-	URL    string
-	APIKey string
+	URL     string
+	APIKey  string
 	Enabled bool
 	// Remove deletes the movie from Radarr entirely after the file is deleted.
 	Remove bool
+	// Unmonitor unmonitors the movie after the file is deleted when Remove is off.
+	Unmonitor bool
 }
 
 func FromEnv() (*Config, error) {
@@ -54,6 +61,19 @@ func FromEnv() (*Config, error) {
 	if err != nil {
 		errs = append(errs, err.Error())
 	}
+	sonarrUnmonitorSeries, err := envBool("CULLARR_SONARR_UNMONITOR_SERIES")
+	if err != nil {
+		errs = append(errs, err.Error())
+	}
+	sonarrRemoveSeries, err := envBool("CULLARR_SONARR_REMOVE_SERIES")
+	if err != nil {
+		errs = append(errs, err.Error())
+	}
+	radarrUnmonitor, err := envBool("CULLARR_RADARR_UNMONITOR")
+	if err != nil {
+		errs = append(errs, err.Error())
+	}
+
 	radarrEnabled, err := envBool("CULLARR_RADARR_ENABLED")
 	if err != nil {
 		errs = append(errs, err.Error())
@@ -86,16 +106,19 @@ func FromEnv() (*Config, error) {
 			Users:  envCSV("CULLARR_JELLYFIN_USERS"),
 		},
 		Sonarr: ArrConfig{
-			URL:       os.Getenv("CULLARR_SONARR_URL"),
-			APIKey:    os.Getenv("CULLARR_SONARR_APIKEY"),
-			Enabled:   sonarrEnabled,
-			Unmonitor: sonarrUnmonitor,
+			URL:             os.Getenv("CULLARR_SONARR_URL"),
+			APIKey:          os.Getenv("CULLARR_SONARR_APIKEY"),
+			Enabled:         sonarrEnabled,
+			Unmonitor:       sonarrUnmonitor,
+			UnmonitorSeries: sonarrUnmonitorSeries,
+			RemoveSeries:    sonarrRemoveSeries,
 		},
 		Radarr: RadarrConfig{
-			URL:     os.Getenv("CULLARR_RADARR_URL"),
-			APIKey:  os.Getenv("CULLARR_RADARR_APIKEY"),
-			Enabled: radarrEnabled,
-			Remove:  radarrRemove,
+			URL:       os.Getenv("CULLARR_RADARR_URL"),
+			APIKey:    os.Getenv("CULLARR_RADARR_APIKEY"),
+			Enabled:   radarrEnabled,
+			Remove:    radarrRemove,
+			Unmonitor: radarrUnmonitor,
 		},
 		MinWatchers: minWatchers,
 		TagPrefix:   tagPrefix,
