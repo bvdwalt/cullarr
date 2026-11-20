@@ -49,16 +49,16 @@ clean:
     @echo "Clean complete"
 
 # Show current version and what the next version would be based on conventional commits
-# Requires: go install github.com/caarlos0/svu/v3@latest
+# Requires: go install github.com/caarlos0/svu/v3@v3.4.4
 version:
     @echo "Current: $(svu current)"
-    @echo "Next:    $(svu next)"
+    @echo "Next:    $(svu next --v0)"
 
 # Create a local git tag for the next version derived from conventional commits
 tag:
     #!/usr/bin/env bash
     set -euo pipefail
-    NEXT=$(svu next)
+    NEXT=$(svu next --v0)
     CURRENT=$(svu current)
     if [ "$NEXT" = "$CURRENT" ]; then
         echo "No commits requiring a version bump since $CURRENT"
@@ -66,17 +66,3 @@ tag:
     fi
     git tag "$NEXT"
     echo "Tagged $NEXT"
-
-# Tag and push to origin — triggers the goreleaser release workflow
-release:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    NEXT=$(svu next)
-    CURRENT=$(svu current)
-    if [ "$NEXT" = "$CURRENT" ]; then
-        echo "No commits requiring a version bump since $CURRENT"
-        exit 0
-    fi
-    git tag "$NEXT"
-    git push origin "$NEXT"
-    echo "Released $NEXT"
